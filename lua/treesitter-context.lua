@@ -1,6 +1,6 @@
 local api = vim.api
 local ts_utils = require'nvim-treesitter.ts_utils'
-local ts_query = require'vim.reesitter.query'
+local ts_query = require'vim.treesitter.query'
 local Highlighter = vim.treesitter.highlighter
 -- local ts_query = require('nvim-treesitter.query')
 local parsers = require'nvim-treesitter.parsers'

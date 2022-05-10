@@ -127,7 +127,10 @@ local get_text_for_node = function(node)
   local start_row, start_col = node:start()
   local end_row, end_col     = node:end_()
 
-  local lines = ts_utils.get_node_text(node)
+  local lines =
+    (vim.version().major == 0 and vim.version().minor < 7)
+      and ts_utils.get_node_text(node, 0)
+      or vim.split(ts_query.get_node_text(node, 0), '\n')
 
   if start_col ~= 0 then
     lines[1] = api.nvim_buf_get_lines(0, start_row, start_row + 1, false)[1]

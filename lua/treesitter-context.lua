@@ -1,6 +1,6 @@
 local api = vim.api
 local ts_utils = require'nvim-treesitter.ts_utils'
-local ts_query = require'vim.treesitter.query'
+local ts = require'vim.treesitter'
 local Highlighter = vim.treesitter.highlighter
 -- local ts_query = require('nvim-treesitter.query')
 local parsers = require'nvim-treesitter.parsers'
@@ -16,9 +16,6 @@ local defaultConfig = {
 }
 
 local config = {}
-
-local ffi = require("ffi")
-ffi.cdef'int curwin_col_off(void);'
 
 -- Constants
 
@@ -131,7 +128,7 @@ local get_text_for_node = function(node)
   local lines =
     (vim.version().major == 0 and vim.version().minor < 7)
       and ts_utils.get_node_text(node, 0)
-      or vim.split(ts_query.get_node_text(node, 0), '\n')
+      or vim.split(ts.get_node_text(node, 0), '\n')
 
   if start_col ~= 0 then
     lines[1] = api.nvim_buf_get_lines(0, start_row, start_row + 1, false)[1]
@@ -194,7 +191,7 @@ local get_indents = function(lines)
 end
 
 local get_gutter_width = function()
-  return ffi.C.curwin_col_off();
+  return vim.fn.getwininfo(vim.api.nvim_get_current_win())[1].textoff;
 end
 
 local nvim_augroup = function(group_name, definitions)

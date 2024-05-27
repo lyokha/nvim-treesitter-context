@@ -296,6 +296,7 @@ function M.get_parent_matches()
   local parent_matches = {}
   local filetype = api.nvim_buf_get_option(0, 'filetype')
   local lines = 0
+  local old_row = -1
   local last_row = -1
   local current_line = api.nvim_call_function('line', { '.' }) - 1
   local first_visible_line = api.nvim_call_function('line', { 'w0' }) - 1
@@ -317,7 +318,7 @@ function M.get_parent_matches()
       and row > 0
       and row ~= last_row then
 
-      if row < current_line then
+      if row < current_line and row ~= old_row then
         if row >= first_visible_line then
           n_visible = n_visible + 1
         end
@@ -332,6 +333,7 @@ function M.get_parent_matches()
         is_full = true
         break
       end
+      old_row = row
     end
     current = current:parent()
   end
@@ -520,7 +522,9 @@ function M.open(scroll)
     local last_offset = nil
 
     for capture, node in captures do
-      local hl = buf_query.hl_cache[capture]
+      local hl = vim.fn.has('nvim-0.10') == 1
+                   and buf_query:get_hl_from_capture(capture)
+                   or buf_query.hl_cache[capture]
       local atom_start_row, atom_start_col,
             atom_end_row,   atom_end_col = node:range()
 

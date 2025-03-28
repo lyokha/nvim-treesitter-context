@@ -230,6 +230,7 @@ local function display_window(width, height, row, col)
       focusable = false,
       style = 'minimal',
       noautocmd = true,
+      border = 'none',
     })
     api.nvim_win_set_var(winid, 'treesitter_context', true)
   else
@@ -372,9 +373,17 @@ function M.get_parent_matches()
   return parent_matches, scroll
 end
 
+local function cannot_open(bufnr, winid)
+  return vim.bo[bufnr].filetype == ''
+    or vim.bo[bufnr].buftype ~= ''
+    or vim.wo[winid].previewwindow
+end
+
 function M.update_context()
-  if api.nvim_get_option('buftype') ~= '' or
-      vim.fn.getwinvar(0, '&previewwindow') ~= 0 then
+  local winid = api.nvim_get_current_win()
+  local bufnr = api.nvim_win_get_buf(winid)
+
+  if cannot_open(bufnr, winid) then
     M.close()
     return
   end
@@ -516,7 +525,7 @@ function M.open(scroll)
 
     local captures =
       buf_query:query()
-        :iter_captures(target_node, saved_bufnr, start_row, current_node:end_())
+        :iter_captures(target_node, saved_bufnr, start_row, current_node:end_(), nil)
 
     local last_line = nil
     local last_offset = nil

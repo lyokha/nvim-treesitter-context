@@ -1,9 +1,8 @@
 local api = vim.api
-local ts_utils = require'nvim-treesitter.ts_utils'
 local ts = require'vim.treesitter'
 local Highlighter = vim.treesitter.highlighter
+local ts_lang = require'vim.treesitter.language'
 -- local ts_query = require('nvim-treesitter.query')
-local parsers = require'nvim-treesitter.parsers'
 local utils = require'treesitter-context.utils'
 local slice = utils.slice
 local word_pattern = utils.word_pattern
@@ -73,7 +72,7 @@ local log_message = function(value)
 end
 
 local get_target_node = function()
-  local tree = parsers.get_parser():parse()[1]
+  local tree = ts.get_parser():parse()[1]
   return tree:root()
 end
 
@@ -106,7 +105,7 @@ local get_type_pattern = function(node, type_patterns)
 end
 
 local function find_node(node, type)
-  local children = ts_utils.get_named_children(node)
+  local children = node:named_children()
   for _, child in ipairs(children) do
     if child:type() == type then
       return child
@@ -126,9 +125,7 @@ local get_text_for_node = function(node)
   local end_row, end_col     = node:end_()
 
   local lines =
-    (vim.version().major == 0 and vim.version().minor < 7)
-      and ts_utils.get_node_text(node, 0)
-      or vim.split(ts.get_node_text(node, 0), '\n')
+    vim.split(ts.get_node_text(node, 0), '\n')
 
   if start_col ~= 0 then
     lines[1] = api.nvim_buf_get_lines(0, start_row, start_row + 1, false)[1]
@@ -260,16 +257,17 @@ function M.do_au_cursor_moved_vertical()
 end
 
 function M.get_context(opts)
-  if not parsers.has_parser() then return nil end
+  local filetype = api.nvim_buf_get_option(0, 'filetype')
+  if not ts_lang.add(ts_lang.get_lang(filetype)) then return nil end
+
   local options = opts or {}
 
-  local cursor_node = ts_utils.get_node_at_cursor()
+  local cursor_node = ts.get_node()
   if not cursor_node then return nil end
 
   local matches = {}
   local expr = cursor_node
 
-  local filetype = api.nvim_buf_get_option(0, 'filetype')
   while expr do
     local is_match, type = is_valid(expr, filetype)
     if is_match then
@@ -286,16 +284,16 @@ function M.get_context(opts)
 end
 
 function M.get_parent_matches()
-  if not parsers.has_parser() then return nil end
+  local filetype = api.nvim_buf_get_option(0, 'filetype')
+  if not ts_lang.add(ts_lang.get_lang(filetype)) then return nil end
 
   -- FIXME: use TS queries when possible
   -- local matches = ts_query.get_capture_matches(0, '@scope.node', 'locals')
 
-  local current = ts_utils.get_node_at_cursor()
+  local current = ts.get_node()
   if not current then return end
 
   local parent_matches = {}
-  local filetype = api.nvim_buf_get_option(0, 'filetype')
   local lines = 0
   local old_row = -1
   local last_row = -1
@@ -482,7 +480,7 @@ function M.open(scroll)
 
   -- api.nvim_command('echom ' .. vim.fn.json_encode({
   --   type = target_node:type(),
-  --   text = ts_utils.get_node_text(target_node),
+  --   text = ts.get_node_text(target_node),
   -- }))
 
   -- Highlight
